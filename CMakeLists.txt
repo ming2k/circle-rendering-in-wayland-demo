@@ -13,10 +13,10 @@ pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
 # Add compilation flags
 add_compile_options(-Wall -Wextra -g -O2)
 
-# 确保protocols目录存在
+# Ensure protocols directory exists
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/protocols)
 
-# 获取xdg-shell.xml的完整路径
+# Get full path to xdg-shell.xml
 execute_process(
   COMMAND pkg-config --variable=pkgdatadir wayland-protocols
   OUTPUT_VARIABLE WAYLAND_PROTOCOLS_DATADIR
