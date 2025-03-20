@@ -26,7 +26,7 @@ On Ubuntu/Debian, install dependencies with:
 sudo apt install cmake build-essential libwayland-dev wayland-protocols pkg-config
 ```
 
-## Building
+## Building and Running
 
 1. Create a build directory and navigate to it:
 ```bash
@@ -44,9 +44,7 @@ cmake ..
 make
 ```
 
-## Running
-
-After building, you can run the program from the build directory:
+4. Run the program from the build directory:
 ```bash
 ./wayland-circle
 ```
@@ -57,22 +55,17 @@ The program will:
 - Respond to window resize events
 - Close gracefully when you press Ctrl+C or close the window
 
-## Cleaning
-
-To clean the last build, you have several options:
-
-1. From the build directory, remove all generated files:
-```bash
-make clean
-```
-
-2. For a complete clean (removing all CMake-generated files), delete the build directory:
-```bash
-# From the project root
-rm -rf build/
-```
-
-This second method is recommended when you want to start fresh, as it removes all cached CMake files and build artifacts.
+5. Cleaning up:
+   - To remove generated files from the build directory:
+     ```bash
+     make clean
+     ```
+   - For a complete clean (removing all CMake-generated files):
+     ```bash
+     # From the project root
+     rm -rf build/
+     ```
+   This second method is recommended when you want to start fresh, as it removes all cached CMake files and build artifacts.
 
 ## Project Structure
 
@@ -90,11 +83,51 @@ wayland-circle/
 
 ## Technical Details
 
-- Uses the XDG shell protocol for window management
-- Implements shared memory buffer rendering
-- Handles Wayland events and protocols directly
-- Demonstrates proper resource management and cleanup
-- Shows how to create and manage Wayland surfaces
+### Rendering Process
+
+The rendering in this program follows these key steps:
+
+1. **Shared Memory Buffers**
+   - The client (our program) allocates a shared memory buffer using the Wayland SHM (Shared Memory) protocol
+   - This buffer acts as a canvas where we can draw pixels directly
+   - The buffer uses the ARGB8888 format, meaning each pixel is represented by 4 bytes (Alpha, Red, Green, Blue)
+
+2. **Client-Side Drawing**
+   - All actual drawing is performed by the client application, not by Wayland
+   - The program directly writes pixel data into the shared memory buffer
+   - The circle is drawn using basic mathematics: for each pixel, we calculate its distance from the center
+   - If the distance is less than the radius, we color that pixel red (otherwise it remains black)
+   - This is pure CPU-based rendering without any GPU acceleration
+
+3. **Buffer Sharing**
+   - Once drawing is complete, the client notifies the Wayland compositor
+   - The compositor receives access to the shared memory buffer
+   - No actual pixel data is copied between processes - the memory is shared
+
+4. **Compositor's Role**
+   - The Wayland compositor (like Weston, Mutter, or KWin) is responsible for:
+     - Reading our shared buffer
+     - Compositing it with other windows
+     - Handling transparency and effects
+     - Finally displaying the result on screen
+
+5. **Window Management**
+   - The XDG shell protocol handles window management
+   - It manages window decorations, resizing, and positioning
+   - When the window is resized, the program:
+     - Creates a new shared memory buffer of the appropriate size
+     - Redraws the circle at the new dimensions
+     - Shares the new buffer with the compositor
+
+This architecture demonstrates Wayland's core principle of "every frame is perfect" - the client has complete control over its pixels, and the compositor ensures smooth, tear-free presentation.
+
+### Performance Considerations
+
+- This implementation uses software rendering, which means all drawing operations are CPU-bound
+- For more complex graphics, you might want to consider:
+  - Using OpenGL/EGL for GPU-accelerated rendering
+  - Using a graphics library like Cairo
+  - Implementing hardware acceleration through Vulkan or OpenGL
 
 ## Notes
 
